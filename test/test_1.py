@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 import os
-import argparse
 import logging
 import warnings
+import pytest
 from common import start_container, stop_container, copy_to_container, run_in_container
 
 warnings.filterwarnings("ignore")
@@ -12,57 +12,35 @@ current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 
 
-class Params(object):
-
-    def __init__(self):
-        parser = argparse.ArgumentParser()
-        parser.add_argument("--container", action="store", help="Container", default="redhat/ubi8")
-        parser.add_argument("--script", action="store", help="Script", default="python_setup.sh")
-        parser.add_argument("--log", action="store", help="Script", default="setup.log")
-        self.args = parser.parse_args()
-
-    @property
-    def parameters(self):
-        return self.args
-
-
-def manual_1(args: argparse.Namespace):
+@pytest.mark.parametrize("container", ["redhat/ubi8",
+                                       "redhat/ubi9",
+                                       "rockylinux:8",
+                                       "rockylinux:9",
+                                       "oraclelinux:8",
+                                       "oraclelinux:9",
+                                       "fedora:latest",
+                                       "ubuntu:focal",
+                                       "ubuntu:jammy",
+                                       "debian:bullseye",
+                                       "opensuse/leap:latest",
+                                       "registry.suse.com/suse/sle15:latest",
+                                       "registry.suse.com/suse/sle15:15.3",
+                                       "amazonlinux:2",
+                                       "amazonlinux:2023"])
+@pytest.mark.parametrize("script", ["python_setup.sh"])
+def test_1(container, script):
     global parent
-    source = f"{parent}/{args.script}"
+    source = f"{parent}/{script}"
     requirements = f"{parent}/requirements.txt"
     destination = f"/var/tmp"
-    script = f"./{args.script}"
-    output = f"cat {args.log}"
+    script = f"./{script}"
 
-    container_id = start_container(args.container)
+    container_id = start_container(container)
     try:
         copy_to_container(container_id, source, destination)
         copy_to_container(container_id, requirements, destination)
         run_in_container(container_id, destination, script)
         stop_container(container_id)
     except Exception:
-        run_in_container(container_id, destination, output)
         stop_container(container_id)
         raise
-
-
-p = Params()
-options = p.parameters
-
-try:
-    debug_level = int(os.environ['DEBUG_LEVEL'])
-except (ValueError, KeyError):
-    debug_level = 3
-
-if debug_level == 0:
-    logger.setLevel(logging.DEBUG)
-elif debug_level == 1:
-    logger.setLevel(logging.ERROR)
-elif debug_level == 2:
-    logger.setLevel(logging.INFO)
-else:
-    logger.setLevel(logging.CRITICAL)
-
-logging.basicConfig()
-
-manual_1(options)
