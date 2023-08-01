@@ -28,7 +28,8 @@ parent = os.path.dirname(current)
                                        "amazonlinux:2",
                                        "amazonlinux:2023"])
 @pytest.mark.parametrize("script", ["python_setup.sh"])
-def test_1(container, script):
+@pytest.mark.parametrize("post_script", ["post_setup.sh"])
+def test_1(container, script, post_script):
     global parent
     source = f"{parent}/{script}"
     requirements = f"{parent}/requirements.txt"
@@ -39,6 +40,7 @@ def test_1(container, script):
     try:
         copy_to_container(container_id, source, destination)
         copy_to_container(container_id, requirements, destination)
+        copy_to_container(container_id, post_script, destination)
         run_in_container(container_id, destination, script)
         stop_container(container_id)
     except Exception:

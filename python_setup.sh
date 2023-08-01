@@ -1,5 +1,7 @@
 #!/bin/bash
 # shellcheck disable=SC2086
+# shellcheck disable=SC2181
+# shellcheck disable=SC1090
 #
 DIRECTORY=$(dirname "$0")
 SCRIPT_DIR=$(cd "$DIRECTORY" && pwd)
@@ -243,5 +245,13 @@ if [ $? -ne 0 ]; then
   exit 1
 else
   echo "Done."
-  echo "Setup successful."
 fi
+
+if [ -x "${SCRIPT_DIR}/post_setup.sh" ]
+then
+  echo "Running post setup steps"
+  "${SCRIPT_DIR}/post_setup.sh" >> $SETUP_LOG 2>&1
+  [ $? -ne 0 ] && err_exit "Post setup script error."
+fi
+
+echo "Setup complete."
