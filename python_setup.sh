@@ -17,6 +17,7 @@ PYTHON39_YUM="python39 python39-pip python39-devel"
 PYTHON39_APT="python3.9 python3.9-dev python3.9-venv"
 PYTHON39_ZYPPER="python39 python39-devel python3-pip"
 PYTHON3_ZYPPER="python3 python3-devel python3-pip"
+PYTHON311_ZYPPER="python311 python311-devel python311-pip"
 PYTHON39_PACMAN="python39"
 
 PYTHON_BIN="python${PYTHON_VERSION}"
@@ -109,8 +110,8 @@ install_python() {
   opensuse-leap|sles)
     if [ "$ID" = "sles" ] && [ "$OS_MINOR_REV" -ge 4 ]
     then
-      zypper install -y $PYTHON3_ZYPPER
-      set_python_version "3.6"
+      zypper install -y $PYTHON311_ZYPPER
+      set_python_version "3.11"
     else
       PIP_VERSION="3"
       zypper install -y $PYTHON39_ZYPPER
