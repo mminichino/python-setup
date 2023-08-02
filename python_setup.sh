@@ -226,7 +226,7 @@ if python3 -V >/dev/null 2>&1
 then
   CURRENT_MAJOR_VERSION=$(python3 -V | awk '{print $2}' | cut -d. -f1)
   CURRENT_MINOR_VERSION=$(python3 -V | awk '{print $2}' | cut -d. -f2)
-  if [ "$CURRENT_MINOR_VERSION" -ge 9 ]
+  if [ "$CURRENT_MINOR_VERSION" -ge 8 ]
   then
     INSTALL_PYTHON=0
     set_python_version "${CURRENT_MAJOR_VERSION}.${CURRENT_MINOR_VERSION}"
