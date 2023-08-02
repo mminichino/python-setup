@@ -21,6 +21,7 @@ class Params(object):
         parser.add_argument("--log", action="store", help="Script", default="setup.log")
         parser.add_argument("--run", action="store_true")
         parser.add_argument("--stop", action="store_true")
+        parser.add_argument("--system", action="store_true")
         self.args = parser.parse_args()
 
     @property
@@ -30,16 +31,22 @@ class Params(object):
 
 def manual_1(args: argparse.Namespace):
     global parent
-    source = f"{parent}/{args.script}"
     requirements = f"{parent}/requirements.txt"
     destination = f"/var/tmp"
-    script = f"./{args.script}"
     output = f"cat {args.log}"
+    script = "python_setup.sh"
+    post_script = "post_setup.sh"
+    source = f"{parent}/{script}"
+    if args.system:
+        script = [f"./{script}", "-s"]
+    else:
+        script = f"./{script}"
 
     container_id = start_container(args.container)
     try:
         copy_to_container(container_id, source, destination)
         copy_to_container(container_id, requirements, destination)
+        copy_to_container(container_id, post_script, destination)
         run_in_container(container_id, destination, script)
         stop_container(container_id)
     except Exception:

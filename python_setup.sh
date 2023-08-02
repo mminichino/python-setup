@@ -11,12 +11,13 @@ FORCE=0
 SETUP_LOG="setup.log"
 INSTALL_PYTHON=1
 SYSTEM_INSTALL=0
+PIP_EXTRA_ARGS=""
 
 PYTHON_VERSION="3.9"
 PIP_VERSION="3.9"
 PYTHON39_YUM="python39 python39-pip python39-devel"
 PYTHON39_APT="python3.9 python3.9-dev python3.9-venv python3-pip"
-PYTHON39_ZYPPER="python39 python39-devel python3-pip"
+PYTHON39_ZYPPER="python39 python39-devel python39-pip"
 PYTHON311_ZYPPER="python311 python311-devel python311-pip"
 PYTHON39_PACMAN="python39"
 
@@ -76,8 +77,12 @@ install_prerequisites() {
     ;;
   debian)
     ;;
-  opensuse-leap|sles)
+  opensuse-leap)
+    zypper addrepo http://download.opensuse.org/tumbleweed/repo/oss/ repo-tumbleweed-oss
     zypper install -y which
+    ;;
+  sles)
+    zypper install -y which gawk
     ;;
   arch)
     pacman-key --init
@@ -92,23 +97,26 @@ install_prerequisites() {
 
 install_python() {
   case ${ID:-null} in
-  centos|rhel|amzn|rocky|ol|fedora)
-    if [ "$ID" = "amzn" ] && [ "$OS_MAJOR_REV" -eq 2 ]
+  amzn)
+    if [ "$OS_MAJOR_REV" -eq 2 ]
     then
       amazon-linux-extras enable python3.8
-      yum install -y python3.8
+      yum install -q -y python3.8
       set_python_version "3.8"
     else
       yum install -q -y $PYTHON39_YUM
     fi
+    ;;
+  centos|rhel|rocky|ol|fedora)
+    yum install -q -y $PYTHON39_YUM
     ;;
   ubuntu|debian)
     export DEBIAN_FRONTEND=noninteractive
     apt-get update
     apt-get install -q -y $PYTHON39_APT
     ;;
-  opensuse-leap|sles)
-    if [ "$ID" = "sles" ] && [ "$OS_MINOR_REV" -ge 4 ]
+  sles)
+    if [ "$OS_MINOR_REV" -ge 4 ]
     then
       zypper install -y $PYTHON311_ZYPPER
       set_python_version "3.11"
@@ -116,6 +124,10 @@ install_python() {
       PIP_VERSION="3"
       zypper install -y $PYTHON39_ZYPPER
     fi
+    ;;
+  opensuse-leap)
+    PIP_VERSION="3"
+    zypper install -y $PYTHON39_ZYPPER
     ;;
   arch)
     pacman -S --noconfirm $PYTHON39_PACMAN
@@ -129,11 +141,13 @@ install_python() {
 post_install() {
   case ${ID:-null} in
   centos|rhel|amzn|rocky|ol|fedora)
+    PIP_EXTRA_ARGS="--ignore-installed"
+    yum install -q -y python3-devel python3-pip
     ;;
   ubuntu|debian)
     export DEBIAN_FRONTEND=noninteractive
     apt-get update
-    apt-get install -q -y python3-dev python3-venv
+    apt-get install -q -y python3-dev python3-venv python3-pip
     ;;
   opensuse-leap|sles)
     ;;
@@ -150,6 +164,26 @@ find_python_bin() {
   then
     err_exit "Python executable $PYTHON_BIN not found."
   fi
+}
+
+set_python_link() {
+  if which python3 >/dev/null 2>&1
+  then
+    DEFAULT_VERSION=$(python3 -V | awk '{print $2}')
+  else
+    DEFAULT_VERSION=""
+  fi
+  INSTALLED_VERSION=$($PYTHON_BIN -V | awk '{print $2}')
+  if [ "$DEFAULT_VERSION" != "$INSTALLED_VERSION" ]; then
+    echo "Updating alternatives for installed Python"
+    [ -n "$DEFAULT_VERSION" ] && LOCATION_DEFAULT=$(which python3) || LOCATION_DEFAULT="/usr/bin/python3"
+    LOCATION_INSTALLED=$(which $PYTHON_BIN)
+    update-alternatives --install $LOCATION_DEFAULT python3 $LOCATION_INSTALLED 10
+  fi
+}
+
+set_pip_link() {
+  true
 }
 
 install_check() {
@@ -234,6 +268,8 @@ if [ "$SYSTEM_INSTALL" -eq 0 ]; then
   printf "Activating virtual environment... "
   source "${PACKAGE_DIR:?}/${VENV_NAME:?}/bin/activate"
   echo "Done."
+else
+  set_python_link
 fi
 
 if ! [ -f requirements.txt ]; then
@@ -243,7 +279,7 @@ fi
 
 printf "Installing dependencies... "
 $PYTHON_BIN -m pip install --upgrade pip setuptools wheel >> $SETUP_LOG 2>&1
-$PIP_BIN install --no-cache-dir -r requirements.txt >> $SETUP_LOG 2>&1
+$PIP_BIN install --no-cache-dir $PIP_EXTRA_ARGS -r requirements.txt >> $SETUP_LOG 2>&1
 if [ $? -ne 0 ]; then
   echo "Setup failed."
   rm -rf "${PACKAGE_DIR:?}/${VENV_NAME:?}"

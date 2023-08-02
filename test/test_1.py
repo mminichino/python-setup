@@ -29,12 +29,16 @@ parent = os.path.dirname(current)
                                        "amazonlinux:2023"])
 @pytest.mark.parametrize("script", ["python_setup.sh"])
 @pytest.mark.parametrize("post_script", ["post_setup.sh"])
-def test_1(container, script, post_script):
+@pytest.mark.parametrize("script_arg", [None, "-s"])
+def test_1(container, script, post_script, script_arg):
     global parent
     source = f"{parent}/{script}"
     requirements = f"{parent}/requirements.txt"
     destination = f"/var/tmp"
-    script = f"./{script}"
+    if script_arg:
+        script = [f"./{script}", script_arg]
+    else:
+        script = f"./{script}"
 
     container_id = start_container(container)
     try:
