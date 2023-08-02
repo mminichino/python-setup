@@ -16,7 +16,7 @@ PIP_EXTRA_ARGS=""
 PYTHON_VERSION="3.9"
 PIP_VERSION="3.9"
 PYTHON39_YUM="python39 python39-pip python39-devel"
-PYTHON39_APT="python3.9 python3.9-dev python3.9-venv python3-pip"
+PYTHON3_APT="python3 python3-dev python3-venv python3-pip"
 PYTHON39_ZYPPER="python39 python39-devel python39-pip"
 PYTHON311_ZYPPER="python311 python311-devel python311-pip"
 PYTHON39_PACMAN="python39"
@@ -113,7 +113,7 @@ install_python() {
   ubuntu|debian)
     export DEBIAN_FRONTEND=noninteractive
     apt-get update
-    apt-get install -q -y $PYTHON39_APT
+    apt-get install -q -y $PYTHON3_APT
     ;;
   sles)
     if [ "$OS_MINOR_REV" -ge 4 ]
@@ -162,7 +162,14 @@ post_install() {
 find_python_bin() {
   if ! which $PYTHON_BIN > /dev/null 2>&1
   then
-    err_exit "Python executable $PYTHON_BIN not found."
+    if which python3 > /dev/null 2>&1
+    then
+      MINOR_VERSION=$(python3 -V | awk '{print $2}' | cut -d. -f2)
+      [ "$MINOR_VERSION" -lt 8 ] && err_exit "Python version is less than 3.8 after install"
+      set_python_version "3"
+    else
+      err_exit "Python executable not found."
+    fi
   fi
 }
 

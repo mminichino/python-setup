@@ -20,8 +20,10 @@ class Params(object):
         parser.add_argument("--script", action="store", help="Script", default="python_setup.sh")
         parser.add_argument("--log", action="store", help="Script", default="setup.log")
         parser.add_argument("--run", action="store_true")
+        parser.add_argument("--start", action="store_true")
         parser.add_argument("--stop", action="store_true")
         parser.add_argument("--system", action="store_true")
+        parser.add_argument("--refresh", action="store_true")
         self.args = parser.parse_args()
 
     @property
@@ -54,6 +56,40 @@ def manual_1(args: argparse.Namespace):
         raise
 
 
+def manual_2(args: argparse.Namespace):
+    global parent
+    requirements = f"{parent}/requirements.txt"
+    destination = f"/var/tmp"
+    script = "python_setup.sh"
+    post_script = "post_setup.sh"
+    source = f"{parent}/{script}"
+
+    container_id = start_container(args.container)
+    try:
+        copy_to_container(container_id, source, destination)
+        copy_to_container(container_id, requirements, destination)
+        copy_to_container(container_id, post_script, destination)
+    except Exception:
+        raise
+
+
+def refresh():
+    global parent
+    requirements = f"{parent}/requirements.txt"
+    destination = f"/var/tmp"
+    script = "python_setup.sh"
+    post_script = "post_setup.sh"
+    source = f"{parent}/{script}"
+
+    container_id = get_container_id()
+    try:
+        copy_to_container(container_id, source, destination)
+        copy_to_container(container_id, requirements, destination)
+        copy_to_container(container_id, post_script, destination)
+    except Exception:
+        raise
+
+
 p = Params()
 options = p.parameters
 
@@ -79,3 +115,9 @@ if options.stop:
 
 if options.run:
     manual_1(options)
+
+if options.start:
+    manual_2(options)
+
+if options.refresh:
+    refresh()
