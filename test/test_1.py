@@ -29,22 +29,23 @@ parent = os.path.dirname(current)
                                        "amazonlinux:2023"])
 @pytest.mark.parametrize("script", ["python_setup.sh"])
 @pytest.mark.parametrize("post_script", ["post_setup.sh"])
-@pytest.mark.parametrize("script_arg", [None, "-s"])
+@pytest.mark.parametrize("script_arg", [None, ["-s"], ["-g", "https://github.com/mminichino/python-test-package"]])
 def test_1(container, script, post_script, script_arg):
     global parent
-    source = f"{parent}/{script}"
-    requirements = f"{parent}/requirements.txt"
+    test_dir = os.path.join(parent, 'test')
+    requirements_file = os.path.join(parent, 'requirements.txt')
+    script_file = os.path.join(parent, script)
+    post_script_file = os.path.join(test_dir, post_script)
     destination = f"/var/tmp"
+    script = [f"./{os.path.basename(script_file)}"]
     if script_arg:
-        script = [f"./{script}", script_arg]
-    else:
-        script = f"./{script}"
+        script.extend(script_arg)
 
     container_id = start_container(container)
     try:
-        copy_to_container(container_id, source, destination)
-        copy_to_container(container_id, requirements, destination)
-        copy_to_container(container_id, post_script, destination)
+        copy_to_container(container_id, script_file, destination)
+        copy_to_container(container_id, requirements_file, destination)
+        copy_to_container(container_id, post_script_file, destination)
         run_in_container(container_id, destination, script)
         stop_container(container_id)
     except Exception:

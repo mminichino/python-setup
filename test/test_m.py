@@ -23,6 +23,7 @@ class Params(object):
         parser.add_argument("--start", action="store_true")
         parser.add_argument("--stop", action="store_true")
         parser.add_argument("--system", action="store_true")
+        parser.add_argument("--git", action="store_true")
         parser.add_argument("--refresh", action="store_true")
         self.args = parser.parse_args()
 
@@ -36,20 +37,21 @@ def manual_1(args: argparse.Namespace):
     requirements = f"{parent}/requirements.txt"
     destination = f"/var/tmp"
     output = f"cat {args.log}"
-    script = "python_setup.sh"
-    post_script = "post_setup.sh"
-    source = f"{parent}/{script}"
+    script = f"{parent}/python_setup.sh"
+    post_script = f"{parent}/test/post_setup.sh"
     if args.system:
-        script = [f"./{script}", "-s"]
+        cmd = [f"./{os.path.basename(script)}", "-s"]
+    elif args.git:
+        cmd = [f"./{os.path.basename(script)}", "-g", "https://github.com/mminichino/python-test-package"]
     else:
-        script = f"./{script}"
+        cmd = f"./{os.path.basename(script)}"
 
     container_id = start_container(args.container)
     try:
-        copy_to_container(container_id, source, destination)
+        copy_to_container(container_id, script, destination)
         copy_to_container(container_id, requirements, destination)
         copy_to_container(container_id, post_script, destination)
-        run_in_container(container_id, destination, script)
+        run_in_container(container_id, destination, cmd)
         stop_container(container_id)
     except Exception:
         run_in_container(container_id, destination, output)
@@ -60,13 +62,12 @@ def manual_2(args: argparse.Namespace):
     global parent
     requirements = f"{parent}/requirements.txt"
     destination = f"/var/tmp"
-    script = "python_setup.sh"
-    post_script = "post_setup.sh"
-    source = f"{parent}/{script}"
+    script = f"{parent}/python_setup.sh"
+    post_script = f"{parent}/test/post_setup.sh"
 
     container_id = start_container(args.container)
     try:
-        copy_to_container(container_id, source, destination)
+        copy_to_container(container_id, script, destination)
         copy_to_container(container_id, requirements, destination)
         copy_to_container(container_id, post_script, destination)
     except Exception:
