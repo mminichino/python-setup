@@ -289,11 +289,6 @@ else
   set_python_link
 fi
 
-if ! [ -f requirements.txt ]; then
-  echo "No requirements.txt found."
-  exit 1
-fi
-
 printf "Installing dependencies... "
 $PYTHON_BIN -m pip install --upgrade pip setuptools wheel >> $SETUP_LOG 2>&1
 
@@ -309,7 +304,7 @@ fi
 
 if [ -n "$GIT_URL" ]; then
   echo "Installing package from VCS $GIT_URL"
-  if $PIP_BIN install $PIP_EXTRA_ARGS "git+${GIT_URL}"
+  if $PIP_BIN install $PIP_EXTRA_ARGS "git+${GIT_URL}" >> $SETUP_LOG 2>&1
   then
     echo "Done."
   else
